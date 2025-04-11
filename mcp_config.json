@@ -1,0 +1,24 @@
+{
+    "mcpServers": {
+        "filesystem": {
+            "command": "npx",
+            "args": [
+              "-y",
+              "@modelcontextprotocol/server-filesystem",
+              "D:\\Projects\\pydrantic-ai-mcp"
+            ]
+        },
+       "firebase-mcp": {
+            "command": "npx",
+            "args": [
+            "-y",
+            "@gannonh/firebase-mcp"
+            ],
+            "env": {
+            "SERVICE_ACCOUNT_KEY_PATH": "D:\\Projects\\pydrantic-ai-mcp\\serviceAccountKey.json",
+            "FIREBASE_STORAGE_BUCKET": "your-project-id.firebasestorage.app"
+            }
+        }
+          
+    } 
+}

@@ -1,0 +1,37 @@
+{
+    "mcpServers": {
+        "filesystem": {
+            "command": "npx",
+            "args": [
+              "-y",
+              "@modelcontextprotocol/server-filesystem",
+              "C:\\Users\\colem\\oTTomator\\ottomator-agents\\pydantic-ai-mcp-agent"
+            ]
+        },
+        "sqlite": {
+            "command": "docker",
+            "args": [
+                "run",
+                "--rm",
+                "-i",
+                "-v",
+                "./data:/mcp",
+                "mcp/sqlite",
+                "--db-path",
+                "/mcp/test.db"
+            ]
+        },
+       "firebase-mcp": {
+            "command": "npx",
+            "args": [
+            "-y",
+            "@gannonh/firebase-mcp"
+            ],
+            "env": {
+            "SERVICE_ACCOUNT_KEY_PATH": "/absolute/path/to/serviceAccountKey.json",
+            "FIREBASE_STORAGE_BUCKET": "your-project-id.firebasestorage.app"
+            }
+        }
+          
+    } 
+}
