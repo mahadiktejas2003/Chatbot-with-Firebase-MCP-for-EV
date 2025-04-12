@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
+import ReactMarkdown from 'react-markdown';
 
 function App() {
   const [messages, setMessages] = useState([]);
@@ -73,7 +74,7 @@ function App() {
       }
       
       // Get WebSocket URL from environment if available, otherwise use default
-      const wsUrl = process.env.REACT_APP_BACKEND_URL || "ws://localhost:8000/ws";
+      const wsUrl = process.env.REACT_APP_BACKEND_URL || "ws://192.168.31.137:8000/ws"; //previously -  "ws://localhost:8000/ws"
       console.log(`Connecting to WebSocket at ${wsUrl}`);
       const ws = new WebSocket(wsUrl);
       
@@ -364,13 +365,17 @@ function App() {
                   {msg.sender === "user" ? "You" : "AI"}
                 </div>
                 <div className="message-content">
-                  {/* Format message content with line breaks with proper unique keys */}
-                  {msg.text.split('\n').map((line, i) => (
-                    <React.Fragment key={`${msg.id}-line-${i}`}>
-                      {line}
-                      {i < msg.text.split('\n').length - 1 && <br />}
-                    </React.Fragment>
-                  ))}
+                  {msg.sender === "bot" ? (
+                    <ReactMarkdown>{msg.text}</ReactMarkdown>
+                  ) : (
+                    // Format user messages with line breaks but no markdown
+                    msg.text.split('\n').map((line, i) => (
+                      <React.Fragment key={`${msg.id}-line-${i}`}>
+                        {line}
+                        {i < msg.text.split('\n').length - 1 && <br />}
+                      </React.Fragment>
+                    ))
+                  )}
                 </div>
               </>
             )}
