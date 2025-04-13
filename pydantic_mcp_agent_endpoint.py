@@ -10,6 +10,7 @@ from pathlib import Path
 import httpx
 import sys
 import os
+import logging
 
 from pydantic_ai.messages import (
     ModelRequest,
@@ -18,21 +19,47 @@ from pydantic_ai.messages import (
     TextPart
 )
 
-from pydantic_mcp_agent import get_pydantic_ai_agent
+# Import our custom agent system
+from ev_linkup_agents import EVLinkupAgentSystem, format_conversation_history
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
+    handlers=[logging.StreamHandler()]
+)
+logger = logging.getLogger("ev_linkup_api")
 
 # Load environment variables
 load_dotenv()
 
-mcp_agent = None
+# Global variable for our agent system
+agent_system = None
 
 # Define a lifespan context manager
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: initialize resources
-    global mcp_agent
-    mcp_agent = await get_pydantic_ai_agent()
+    global agent_system
+    
+    try:
+        logger.info("Initializing EV LinkUp Agent System...")
+        agent_system = EVLinkupAgentSystem()
+        await agent_system.initialize()
+        logger.info("EV LinkUp Agent System successfully initialized")
+    except Exception as e:
+        logger.error(f"Failed to initialize agent system: {e}")
+        # Continue even with error as some endpoints might not require the agent
     
     yield
+    
+    # Shutdown: clean up resources
+    if agent_system:
+        try:
+            await agent_system.cleanup()
+            logger.info("Agent system successfully cleaned up")
+        except Exception as e:
+            logger.error(f"Error during agent system cleanup: {e}")
 
 # Initialize FastAPI app
 app = FastAPI(lifespan=lifespan)
@@ -110,23 +137,25 @@ async def store_message(session_id: str, message_type: str, content: str, data: 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to store message: {str(e)}")
 
-@app.post("/api/pydantic-mcp-agent", response_model=AgentResponse)
-async def pydantic_mcp_agent(
+@app.post("/api/ev-linkup-agent", response_model=AgentResponse)
+async def ev_linkup_agent(
     request: AgentRequest,
     authenticated: bool = Depends(verify_token)
 ):
     try:
+        # Check if agent system is initialized
+        global agent_system
+        if not agent_system:
+            raise HTTPException(
+                status_code=503, 
+                detail="Agent system is not initialized"
+            )
+        
         # Fetch conversation history
         conversation_history = await fetch_conversation_history(request.session_id)
         
         # Convert conversation history to format expected by agent
-        messages = []
-        for msg in conversation_history:
-            msg_data = msg["message"]
-            msg_type = msg_data["type"]
-            msg_content = msg_data["content"]
-            msg = ModelRequest(parts=[UserPromptPart(content=msg_content)]) if msg_type == "human" else ModelResponse(parts=[TextPart(content=msg_content)])
-            messages.append(msg)
+        messages = format_conversation_history(conversation_history)
 
         # Store user's query
         await store_message(
@@ -135,30 +164,21 @@ async def pydantic_mcp_agent(
             content=request.query
         )        
 
-        # Run the agent with conversation history
-        result = await mcp_agent.run(
-            request.query,
-            message_history=messages
-        )
+        # Process the query using our agent system
+        result = await agent_system.handle_query(request.query, messages)
 
         # Store agent's response
         await store_message(
             session_id=request.session_id,
             message_type="ai",
-            content=result.data,
+            content=result,
             data={"request_id": request.request_id}
         )
-
-        # Update memories based on the last user message and agent response
-        memory_messages = [
-            {"role": "user", "content": request.query},
-            {"role": "assistant", "content": result.data}
-        ]   
 
         return AgentResponse(success=True)
 
     except Exception as e:
-        print(f"Error processing agent request: {str(e)}")
+        logger.error(f"Error processing agent request: {str(e)}")
         # Store error message in conversation
         await store_message(
             session_id=request.session_id,
@@ -167,6 +187,16 @@ async def pydantic_mcp_agent(
             data={"error": str(e), "request_id": request.request_id}
         )
         return AgentResponse(success=False)
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint to verify API status."""
+    global agent_system
+    
+    if agent_system:
+        return {"status": "healthy", "system_initialized": True}
+    else:
+        return {"status": "degraded", "system_initialized": False}
 
 if __name__ == "__main__":
     import uvicorn
