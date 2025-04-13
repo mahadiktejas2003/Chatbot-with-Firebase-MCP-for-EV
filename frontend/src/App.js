@@ -9,8 +9,10 @@ function App() {
   const [connectionStatus, setConnectionStatus] = useState("Connecting...");
   const [connectionAttempts, setConnectionAttempts] = useState(0);
   const [isTyping, setIsTyping] = useState(false);
+  const [showWelcomeScreen, setShowWelcomeScreen] = useState(true);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const connectionErrorsRef = useRef(0);
   const MAX_RECONNECT_ATTEMPTS = 5;
   const reconnectTimeoutRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -98,11 +100,21 @@ function App() {
         console.log("WebSocket connection established");
         clearTimeout(connectionTimeout);
         setConnectionStatus("Connected");
-        setMessages(prev => [...prev, { 
-          id: Date.now(), 
-          sender: "system", 
-          text: "Connected to server successfully." 
-        }]);
+        
+        // Only add the connection message if we had trouble connecting before
+        if (connectionErrorsRef.current > 0) {
+          setMessages(prev => [
+            ...prev.filter(msg => !msg.isConnectionUpdate), // Remove any previous connection messages
+            { 
+              id: Date.now(), 
+              sender: "system", 
+              text: "Connected to server successfully.",
+              isConnectionUpdate: true
+            }
+          ]);
+        }
+        // Reset connection error count
+        connectionErrorsRef.current = 0;
         setConnectionAttempts(0); // Reset connection attempts on success
       };
       
@@ -111,6 +123,11 @@ function App() {
         try {
           // Try to parse as JSON first
           const jsonData = JSON.parse(event.data);
+          
+          // Hide welcome screen after first real message
+          if (showWelcomeScreen && jsonData.type !== 'status') {
+            setShowWelcomeScreen(false);
+          }
           
           switch (jsonData.type) {
             case "error":
@@ -151,12 +168,15 @@ function App() {
             case "status":
               // Handle status updates (AI is thinking, processing tools, etc.)
               // Don't clear typing indicator, just show the status
-              setMessages(prev => [...prev, { 
-                id: Date.now(), 
-                sender: "system", 
-                text: jsonData.message,
-                isStatus: true
-              }]);
+              setMessages(prev => [
+                ...prev,
+                { 
+                  id: Date.now(), 
+                  sender: "system", 
+                  text: jsonData.message,
+                  isStatus: true
+                }
+              ]);
               break;
               
             case "warning":
@@ -193,6 +213,7 @@ function App() {
       ws.onerror = (error) => {
         console.error("WebSocket error:", error);
         setConnectionStatus("Connection Error");
+        connectionErrorsRef.current += 1;
       };
       
       ws.onclose = (event) => {
@@ -204,22 +225,30 @@ function App() {
         
         // Only attempt to reconnect if we haven't exceeded maximum attempts
         if (connectionAttempts < MAX_RECONNECT_ATTEMPTS) {
-          setMessages(prev => [...prev, { 
-            id: Date.now(), 
-            sender: "system", 
-            text: `Connection lost. Attempting to reconnect (${connectionAttempts + 1}/${MAX_RECONNECT_ATTEMPTS})...` 
-          }]);
+          // Don't flood the UI with connection messages, only show if we're not showing too many already
+          if (connectionErrorsRef.current < 3) {
+            setMessages(prev => [...prev.filter(msg => !msg.isConnectionUpdate), { 
+              id: Date.now(), 
+              sender: "system", 
+              text: `Connection lost. Attempting to reconnect (${connectionAttempts + 1}/${MAX_RECONNECT_ATTEMPTS})...`,
+              isConnectionUpdate: true
+            }]);
+          }
           
           // Exponential backoff for reconnection attempts
           const timeout = Math.min(1000 * (2 ** connectionAttempts), 10000);
           reconnectTimeoutRef.current = setTimeout(() => {
             setConnectionAttempts(prev => prev + 1);
           }, timeout);
+          
+          connectionErrorsRef.current += 1;
         } else {
-          setMessages(prev => [...prev, { 
+          setMessages(prev => [...prev.filter(msg => !msg.isConnectionUpdate), { 
             id: Date.now(), 
             sender: "system", 
-            text: "Maximum reconnection attempts reached. Please refresh the page." 
+            text: "Maximum reconnection attempts reached. Please refresh the page.",
+            isConnectionUpdate: true,
+            isError: true
           }]);
         }
       };
@@ -231,9 +260,25 @@ function App() {
     }
   };
 
+  const handleStartNewChat = () => {
+    setShowWelcomeScreen(false);
+    // Add a system welcome message at the start of the chat
+    setMessages([{
+      id: Date.now(),
+      sender: "system",
+      text: "Welcome to EV LinkUp! I'm your assistant for all things related to electric vehicles, charging stations, and EV services. How can I help you today?",
+      isWelcome: true
+    }]);
+  };
+
   const sendMessage = () => {
     if (socket && socket.readyState === WebSocket.OPEN && input.trim()) {
       const messageToSend = input.trim();
+      
+      // Hide welcome screen if it's still shown
+      if (showWelcomeScreen) {
+        setShowWelcomeScreen(false);
+      }
       
       // Add user message to chat
       setMessages(prev => [...prev, { 
@@ -315,7 +360,7 @@ function App() {
   return (
     <div className="chat-app">
       <header className="chat-header">
-        <h1>MCP AI Chatbot</h1>
+        <h1>EV LinkUp Assistant</h1>
         <div className="connection-status">
           <span className="status-dot" style={{ backgroundColor: getStatusColor() }}></span>
           <span>{connectionStatus}</span>
@@ -331,66 +376,106 @@ function App() {
       </header>
       
       <main className="messages-container">
-        {messages.length === 0 && (
-          <div className="welcome-message">
-            <h2>Welcome to MCP AI Chatbot!</h2>
-            <p>Start chatting by typing a message below. I can help with:</p>
-            <ul>
-              <li>Answering questions about code and projects</li>
-              <li>Searching and analyzing files</li>
-              <li>Running tools and commands</li>
-              <li>Understanding complex technical concepts</li>
-            </ul>
-          </div>
-        )}
-        
-        {messages.map((msg) => (
-          <div 
-            key={`message-${msg.id}`} 
-            className={`message ${msg.sender}-message 
-            ${msg.isError ? 'error-message' : ''} 
-            ${msg.isWarning ? 'warning-message' : ''} 
-            ${msg.isStatus ? 'status-message' : ''}`}
-          >
-            {msg.sender === "system" ? (
-              <div className={`system-message-content 
-                ${msg.isError ? 'error' : ''} 
-                ${msg.isWarning ? 'warning' : ''} 
-                ${msg.isStatus ? 'status' : ''}`}>
-                {msg.text}
+        {showWelcomeScreen ? (
+          <div className="welcome-screen">
+            <div className="welcome-logo">
+              <div className="ev-logo">
+                <span className="ev-icon">⚡</span>
+                <h1>EV LinkUp</h1>
               </div>
-            ) : (
-              <>
-                <div className="message-avatar">
-                  {msg.sender === "user" ? "You" : "AI"}
+              <p className="tagline">Your electric vehicle companion</p>
+            </div>
+            
+            <div className="welcome-message">
+              <h2>Welcome to EV LinkUp Assistant!</h2>
+              <p>I'm your AI assistant for everything related to electric vehicles and charging stations.</p>
+              
+              <div className="welcome-features">
+                <div className="feature">
+                  <span className="feature-icon">🔍</span>
+                  <h3>Find EV Stations</h3>
+                  <p>Locate charging stations near you or in specific cities</p>
                 </div>
-                <div className="message-content">
-                  {msg.sender === "bot" ? (
-                    <ReactMarkdown>{msg.text}</ReactMarkdown>
-                  ) : (
-                    // Format user messages with line breaks but no markdown
-                    msg.text.split('\n').map((line, i) => (
-                      <React.Fragment key={`${msg.id}-line-${i}`}>
-                        {line}
-                        {i < msg.text.split('\n').length - 1 && <br />}
-                      </React.Fragment>
-                    ))
-                  )}
+                
+                <div className="feature">
+                  <span className="feature-icon">📊</span>
+                  <h3>Track Energy Usage</h3>
+                  <p>Monitor your EV's energy consumption and costs</p>
                 </div>
-              </>
-            )}
-          </div>
-        ))}
-        
-        {isTyping && (
-          <div className="message bot-message">
-            <div className="message-avatar">AI</div>
-            <div className="message-content typing-indicator">
-              <span></span>
-              <span></span>
-              <span></span>
+                
+                <div className="feature">
+                  <span className="feature-icon">💰</span>
+                  <h3>Manage Payments</h3>
+                  <p>Review and manage your charging payments</p>
+                </div>
+              </div>
+              
+              <button className="start-chat-button" onClick={handleStartNewChat}>
+                Start Chatting
+              </button>
             </div>
           </div>
+        ) : (
+          <>
+            {messages.length === 0 ? (
+              <div className="empty-chat-prompt">
+                <p>Type a message below to get started!</p>
+              </div>
+            ) : (
+              messages.map((msg) => (
+                <div 
+                  key={`message-${msg.id}`} 
+                  className={`message ${msg.sender}-message 
+                  ${msg.isError ? 'error-message' : ''} 
+                  ${msg.isWarning ? 'warning-message' : ''} 
+                  ${msg.isStatus ? 'status-message' : ''}
+                  ${msg.isWelcome ? 'welcome-message-chat' : ''}
+                  ${msg.isConnectionUpdate ? 'connection-update' : ''}`}
+                >
+                  {msg.sender === "system" ? (
+                    <div className={`system-message-content 
+                      ${msg.isError ? 'error' : ''} 
+                      ${msg.isWarning ? 'warning' : ''} 
+                      ${msg.isStatus ? 'status' : ''}
+                      ${msg.isWelcome ? 'welcome' : ''}
+                      ${msg.isConnectionUpdate ? 'connection-update-content' : ''}`}>
+                      {msg.text}
+                    </div>
+                  ) : (
+                    <>
+                      <div className="message-avatar">
+                        {msg.sender === "user" ? "You" : "AI"}
+                      </div>
+                      <div className="message-content">
+                        {msg.sender === "bot" ? (
+                          <ReactMarkdown>{msg.text}</ReactMarkdown>
+                        ) : (
+                          // Format user messages with line breaks but no markdown
+                          msg.text.split('\n').map((line, i) => (
+                            <React.Fragment key={`${msg.id}-line-${i}`}>
+                              {line}
+                              {i < msg.text.split('\n').length - 1 && <br />}
+                            </React.Fragment>
+                          ))
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))
+            )}
+            
+            {isTyping && (
+              <div className="message bot-message">
+                <div className="message-avatar">AI</div>
+                <div className="message-content typing-indicator">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+              </div>
+            )}
+          </>
         )}
         
         <div ref={messagesEndRef} />

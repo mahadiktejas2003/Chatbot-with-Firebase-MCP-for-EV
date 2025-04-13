@@ -1,4 +1,4 @@
-/* App.css - Modern styling for MCP AI Chatbot with improved mobile responsiveness */
+/* App.css - Modern styling for EV LinkUp Assistant with improved mobile responsiveness */
 
 * {
   box-sizing: border-box;
@@ -9,7 +9,10 @@
 :root {
   --primary-color: #3498db;
   --primary-dark: #2980b9;
+  --primary-light: #a6d0f3;
   --secondary-color: #2c3e50;
+  --accent-color: #e74c3c;
+  --accent-soft: #f0826b;
   --light-bg: #f5f8fa;
   --chat-bg: #f9f9f9;
   --user-bubble: #3498db;
@@ -17,6 +20,7 @@
   --error-color: #e74c3c;
   --success-color: #2ecc71;
   --warning-color: #f39c12;
+  --info-color: #3498db;
   --text-dark: #333;
   --text-light: #fff;
   --text-muted: #7f8c8d;
@@ -137,35 +141,172 @@ body {
   border-radius: 3px;
 }
 
-.welcome-message {
+/* Empty chat prompt */
+.empty-chat-prompt {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Welcome screen - New Component */
+.welcome-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 20px;
+  background: linear-gradient(to bottom, #ffffff, #f5f8fa);
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.welcome-logo {
+  margin-bottom: 30px;
   text-align: center;
-  background-color: rgba(255, 255, 255, 0.9);
+}
+
+.ev-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+.ev-icon {
+  font-size: 2.5rem;
+  margin-right: 10px;
+  color: var(--accent-color);
+}
+
+.ev-logo h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--secondary-color);
+}
+
+.tagline {
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.welcome-message {
+  background-color: white;
   padding: 30px;
-  border-radius: 10px;
+  border-radius: 20px;
   box-shadow: var(--shadow-light);
-  margin: 40px auto;
-  max-width: 80%;
+  max-width: 600px;
+  width: 100%;
+  text-align: center;
 }
 
 .welcome-message h2 {
-  font-size: 1.5rem;
-  margin-bottom: 10px;
+  font-size: 1.8rem;
+  margin-bottom: 15px;
   color: var(--secondary-color);
 }
 
 .welcome-message p {
   color: var(--text-muted);
-  margin-bottom: 15px;
+  margin-bottom: 25px;
+  font-size: 1.1rem;
 }
 
-.welcome-message ul {
-  text-align: left;
-  margin-left: 30px;
-  color: var(--text-dark);
+.welcome-features {
+  display: flex;
+  justify-content: space-around;
+  margin: 30px 0;
+  flex-wrap: wrap;
+  gap: 20px;
 }
 
-.welcome-message li {
+.feature {
+  flex: 1;
+  min-width: 150px;
+  padding: 15px;
+  border-radius: 12px;
+  background-color: var(--light-bg);
+  text-align: center;
+  transition: transform 0.3s ease;
+}
+
+.feature:hover {
+  transform: translateY(-5px);
+}
+
+.feature-icon {
+  font-size: 2rem;
+  margin-bottom: 10px;
+  display: block;
+}
+
+.feature h3 {
+  font-size: 1rem;
   margin-bottom: 5px;
+  color: var(--secondary-color);
+}
+
+.feature p {
+  font-size: 0.85rem;
+  color: var (--text-muted);
+  margin-bottom: 0;
+}
+
+.start-chat-button {
+  background-color: var(--accent-color);
+  color: white;
+  border: none;
+  padding: 12px 30px;
+  font-size: 1.1rem;
+  border-radius: 30px;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background-color 0.2s, transform 0.2s;
+  box-shadow: 0 4px 8px rgba(231, 76, 60, 0.2);
+}
+
+.start-chat-button:hover {
+  background-color: var(--accent-soft);
+  transform: scale(1.05);
+}
+
+.start-chat-button:active {
+  transform: scale(0.98);
+}
+
+/* Standard welcome message - smaller version that appears at top of chat */
+.welcome-message-chat {
+  max-width: 90%;
+  margin: 0 auto 20px auto;
+}
+
+.system-message-content.welcome {
+  background-color: var(--primary-light);
+  color: var(--secondary-color);
+  border: none;
+  padding: 15px 20px;
+  font-weight: 500;
+  font-style: normal;
+  box-shadow: 0 2px 6px rgba(52, 152, 219, 0.2);
+}
+
+/* Connection update messages */
+.connection-update {
+  text-align: center;
+  margin: 8px auto;
+  max-width: 80%;
+  opacity: 0.8;
+}
+
+.connection-update-content {
+  background-color: rgba(52, 152, 219, 0.1);
+  border: 1px solid rgba(52, 152, 219, 0.2);
+  color: var(--primary-dark);
+  font-size: 0.8rem;
+  padding: 5px 10px;
 }
 
 /* Message styles */
@@ -174,7 +315,7 @@ body {
   margin-bottom: 16px;
   animation: fadeIn 0.3s ease-in-out;
   max-width: 85%;
-  transition: transform var(--transition-speed);
+  transition: transform var (--transition-speed);
 }
 
 .message:hover {
@@ -351,6 +492,12 @@ body {
   color: #856404;
 }
 
+.system-message-content.status {
+  background-color: rgba(52, 152, 219, 0.1);
+  border-color: rgba(52, 152, 219, 0.3);
+  color: var(--info-color);
+}
+
 /* Typing indicator */
 .typing-indicator {
   display: flex;
@@ -476,13 +623,6 @@ body {
   height: 20px;
 }
 
-/* Error message styling */
-.error-message .system-message-content {
-  background-color: rgba(231, 76, 60, 0.1);
-  border-color: var(--error-color);
-  color: var(--error-color);
-}
-
 /* Responsive design - improved for portrait mode on mobile devices */
 @media (max-width: 768px) {
   :root {
@@ -512,10 +652,24 @@ body {
   .welcome-message {
     padding: 20px;
     margin: 20px auto;
+    width: 90%;
+  }
+
+  .welcome-features {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .feature {
+    min-width: 100%;
   }
   
   .welcome-message h2 {
     font-size: 1.3rem;
+  }
+
+  .ev-logo h1 {
+    font-size: 2rem;
   }
   
   .message {
@@ -546,6 +700,25 @@ body {
     width: 42px;
     height: 42px;
   }
+
+  /* Better scaling for feature icons */
+  .feature-icon {
+    font-size: 1.8rem;
+    margin-bottom: 8px;
+  }
+  
+  /* Improve button tap target sizes */
+  .reconnect-button, 
+  .start-chat-button {
+    padding: 8px 16px;
+    min-height: 36px;
+  }
+  
+  /* Make sure typing indicator is visible */
+  .typing-indicator {
+    padding: 10px;
+    min-height: 24px;
+  }
 }
 
 /* Portrait phones - extra optimizations */
@@ -574,6 +747,22 @@ body {
   .welcome-message {
     max-width: 95%;
     padding: 15px;
+  }
+
+  .welcome-message p {
+    font-size: 0.9rem;
+  }
+
+  .welcome-message h2 {
+    font-size: 1.2rem;
+  }
+
+  .ev-logo h1 {
+    font-size: 1.8rem;
+  }
+
+  .tagline {
+    font-size: 1rem;
   }
   
   .connection-status {
@@ -606,6 +795,29 @@ body {
     width: 16px;
     height: 16px;
   }
+
+  .feature-icon {
+    font-size: 1.5rem;
+  }
+
+  /* Fix welcome screen scrolling on small devices */
+  .welcome-screen {
+    overflow-y: auto;
+    justify-content: flex-start;
+    padding-top: 5vh;
+  }
+  
+  /* Tighter spacing on mobile */
+  .welcome-features {
+    margin: 20px 0;
+    gap: 10px;
+  }
+  
+  /* Improve mobile chat avatar sizing */
+  .message-avatar {
+    min-width: 28px;
+    min-height: 28px;
+  }
 }
 
 /* Landscape orientation on mobile */
@@ -627,9 +839,19 @@ body {
     padding: 15px;
     margin: 10px auto;
   }
+
+  .welcome-features {
+    flex-direction: row;
+    margin: 15px 0;
+  }
   
   .welcome-message h2 {
     font-size: 1.2rem;
+  }
+
+  .start-chat-button {
+    padding: 8px 20px;
+    font-size: 1rem;
   }
   
   .message {
@@ -638,6 +860,66 @@ body {
   
   .message-content {
     padding: 8px 12px;
+  }
+}
+
+/* iPad and tablets in portrait mode */
+@media (min-width: 481px) and (max-width: 1024px) and (orientation: portrait) {
+  .welcome-logo {
+    margin-bottom: 20px;
+  }
+  
+  .welcome-message {
+    max-width: 90%;
+    padding: 20px;
+  }
+  
+  .welcome-features {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+  
+  .feature {
+    flex-basis: calc(50% - 15px);
+    min-width: initial;
+  }
+}
+
+/* Landscape mode optimizations for all devices */
+@media (orientation: landscape) and (max-height: 600px) {
+  .welcome-screen {
+    flex-direction: row;
+    align-items: flex-start;
+    overflow-y: auto;
+  }
+  
+  .welcome-logo {
+    width: 30%;
+    margin-bottom: 0;
+    padding: 15px;
+  }
+  
+  .welcome-message {
+    width: 70%;
+    max-height: 100%;
+    overflow-y: auto;
+    padding: 15px;
+  }
+  
+  .welcome-features {
+    flex-direction: row;
+    margin: 15px 0;
+    flex-wrap: wrap;
+  }
+  
+  .feature {
+    flex-basis: calc(33.333% - 15px);
+    padding: 10px;
+  }
+  
+  .chat-header {
+    padding: 8px 15px;
   }
 }
 
@@ -651,5 +933,82 @@ body {
   .messages-container {
     height: calc(100vh - var(--header-height) - var(--footer-height));
     height: calc(-webkit-fill-available - var(--header-height) - var(--footer-height));
+  }
+}
+
+/* Fix scrolling issues on iOS Safari */
+html, body {
+  height: 100%;
+  overflow: hidden;
+  -webkit-overflow-scrolling: touch;
+  position: relative;
+}
+
+/* Fix for notch phones and safe areas */
+@supports (padding: max(0px)) {
+  .chat-app {
+    padding-left: env(safe-area-inset-left, 0);
+    padding-right: env(safe-area-inset-right, 0);
+    padding-top: env(safe-area-inset-top, 0);
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+  
+  .input-container {
+    padding-bottom: max(15px, env(safe-area-inset-bottom, 15px));
+  }
+}
+
+/* Improved touch targets for mobile */
+@media (pointer: coarse) {
+  .send-button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  
+  .reconnect-button {
+    min-height: 32px;
+    min-width: 80px;
+  }
+  
+  .message-avatar {
+    min-width: 32px;
+    min-height: 32px;
+  }
+}
+
+/* Optimize for large screens */
+@media (min-width: 1200px) {
+  .chat-app {
+    max-width: 1200px;
+    margin: 0 auto;
+    height: 100vh;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-medium);
+  }
+  
+  .welcome-message {
+    max-width: 800px;
+  }
+  
+  .messages-container {
+    padding: 30px;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --user-bubble: #0056b3;
+    --primary-color: #0056b3;
+    --text-muted: #555;
+    --border-color: #000;
+  }
+  
+  .message-content {
+    border: 1px solid var(--border-color);
+  }
+  
+  .system-message-content {
+    border-width: 2px;
   }
 }
